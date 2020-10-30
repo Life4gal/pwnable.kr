@@ -1,6 +1,7 @@
-from os import pipe, fork, close, write, dup2, execve
+from os import pipe, write
 from socket import socket, AF_INET, SOCK_STREAM
 from subprocess import Popen
+from os import environ
 
 processPath = './input'
 
@@ -12,8 +13,10 @@ argv = ['a'] * 100
 argv[0] = processPath
 argv[ord('A')] = ''  # \x00 是终止符....在这里卡了好久...
 argv[ord('B')] = '\x20\x0a\x0d'
+# 这是第五关的端口设置
+argv[ord('C')] = '1145'
 
-# process = Popen(argv)
+# Popen(argv)
 
 # 第二关
 """
@@ -38,27 +41,29 @@ pipeStderr = pipe()
 write(pipeStdin[1], b'\x00\x0a\x00\xff')
 write(pipeStderr[1], b'\x00\x0a\x02\xff')
 
-# process = Popen(argv, stdin = pipeStdin[0], stderr = pipeStderr[0])
+# Popen(argv, stdin = pipeStdin[0], stderr = pipeStderr[0])
 
 # 第三关
-# char* getenv(const char *name)是查找程序环境列表中参数name的值
+# char* getenv(const char* name)是查找程序环境列表中参数name的值
 # 要求 env['\xde\xad\xbe\xef'] 是 '\xca\xfe\xba\xbe'
-envs = {'\xde\xad\xbe\xef': '\xca\xfe\xba\xbe', }
+environ['\xde\xad\xbe\xef'] = '\xca\xfe\xba\xbe'
 
-process = Popen(argv, stdin = pipeStdin[0], stderr = pipeStderr[0], env = envs)
+# 这里不知道为啥就是不对...
+Popen(argv, stdin = pipeStdin[0], stderr = pipeStderr[0], env = environ)
+
 
 # 第四关
 # 打开一个叫 '\x0a' 的文件并且读取四个字符
 # 要求内容是 '\x00\x00\x00\x00'
-with open('\x0a', 'wt') as f:
-	f.writelines('\x00\x00\x00\x00')
+with open(r'\x0a', 'wb') as f:
+	f.write(b'\x00\x00\x00\x00')
 
 # 第五关
 # 将 input 作为服务端,监听端口 argv[ord('C')] 转为整形(atoi)的值
 # 要求给 input 的这个端口发送一个 4 字符信息,内容为 '\xde\xad\xbe\xef'
-# argv[ord('C')] = '1145'
-#
+
 # sock = socket(AF_INET, SOCK_STREAM)
 # sock.connect(('127.0.0.1', int(argv[ord('C')])))
 # sock.send(b'\xde\xad\xbe\xef')
 # sock.close()
+
